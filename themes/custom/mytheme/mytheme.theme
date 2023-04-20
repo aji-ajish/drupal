@@ -1,0 +1,116 @@
+<?php
+
+use Drupal\Core\Link;
+use Drupal\node\Plugin\views\argument\Nid;
+use Drupal\Core\Template\TwigExtension;
+
+
+
+//to take content type.
+
+function loopBinder($content_type)
+{
+  $nids = \Drupal::entityQuery('node')->condition('type', $content_type)->execute();
+  $nodes =  \Drupal\node\Entity\Node::loadMultiple($nids);
+  foreach ($nodes as $node) {
+    $nodedata[] = $node->toArray();
+  }
+  return $nodedata;
+}
+
+function mytheme_preprocess(&$variables, $hook)
+{
+  $variables['base_path'] = base_path();
+
+  $url = \Drupal\Core\Url::fromRoute('<current>');
+  $path = $url->getInternalPath();
+
+  $variables['url_node'] = $path;
+
+  $entityTypeManager = \Drupal::service('entity_type.manager');
+
+  $types = [];
+  $contentTypes = $entityTypeManager->getStorage('node_type')->loadMultiple();
+  foreach ($contentTypes as $contentType) {
+    $types[$contentType->id()] = $contentType->label();
+  }
+
+  $variables['content_type'] = $types;
+
+
+
+
+
+  $menu_name = 'mainmenu';
+  $menu_tree = \Drupal::menuTree();
+  $parameters = $menu_tree->getCurrentRouteMenuTreeParameters($menu_name);
+  $parameters->setMinDepth(0);
+  //$parameters->setMaxDepth(2);
+  //Delete comments to have only enabled links
+  //$parameters->onlyEnabledLinks();
+
+  $tree = $menu_tree->load($menu_name, $parameters);
+  $manipulators = array(
+    array('callable' => 'menu.default_tree_manipulators:checkAccess'),
+    array('callable' => 'menu.default_tree_manipulators:generateIndexAndSort'),
+  );
+  $tree = $menu_tree->transform($tree, $manipulators);
+  // var_dump($tree);die;
+  $list = [];
+
+  $i = 0;
+  foreach ($tree as $item) {
+    $title = $item->link->getTitle();
+    $nid = $item->link->getOptions();
+    $url = $item->link->getUrlObject();
+    $menu_url = $url->toString();
+    //$alias = \Drupal::service('path_alias.manager')->getAliasByPath('/node/'.$nid['node']);
+    $list[$i]['title'] = $title;
+    $list[$i]['url'] = $menu_url;
+    $i++;
+  }
+  $variables['main_menu'] = $list;
+  $variables['site_base_url'] = $GLOBALS['base_url'];
+
+  $current_path = \Drupal::service('path.current')->getPath();
+  $alias = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
+  $variables['current_path'] = $alias;
+
+  try {
+    // The file containing content type details to loop
+    require 'themes/custom/mytheme/mytheme.global';
+  } catch (\Throwable $th) {
+  }
+  $i = 0;
+  foreach ($globals as $global) {
+    $loops = [];
+    $loops = loopBinder($global['content_type']);
+    foreach ($loops as $loop) {
+      foreach ($global['fields'] as $fields) {
+        // if for checking the page is same
+        $count = count($loop['field_page']); // page field count.
+        for ($j=0; $j < $count ; $j++) {
+          if($loop['field_page'][$j]["value"] == $alias){
+            $newloop['fields'][$i][$fields] = $loop[$fields];
+          }else if (strtolower($loop['field_page'][$j]["value"]) == 'all') {
+            $newloop['fields'][$i][$fields] = $loop[$fields];
+          }
+        }
+      }
+      $i++;
+    }
+    try {
+      if(!empty($newloop)){
+        $variables[$global['name']] = $newloop;
+      }else{
+        $variables[$global['name']] = [];
+      }
+
+    } catch (\Throwable $th) {
+      $variables[$global['name']] = [];
+    }
+    $newloop = [];
+  }
+
+}
+

@@ -1,0 +1,36 @@
+<?php
+
+$globals = array(
+  [
+    "name"=>"bannerimageloop",
+    "content_type"=>"home_page_banner",
+    "fields"=>[
+      "field_banner_content",
+      "field_banner_heading",
+      "field_banner_image",
+      "field_page",
+    ]
+  ],
+    [
+    "name"=>"causespageloop",
+    "content_type"=>"causes_page_loop",
+    "fields"=>[
+      "field_banner_content",
+      "field_goal",
+      "field_banner_heading",
+      "field_page",
+      "field_image",
+      "field_raised",
+    ]
+  ],
+      [
+    "name"=>"homepageloop",
+    "content_type"=>"home_page_loop",
+    "fields"=>[
+      "field_description",
+      "field_image",
+      "field_page",
+    ]
+  ],
+);
+

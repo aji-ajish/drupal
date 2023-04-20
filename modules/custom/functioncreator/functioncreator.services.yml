@@ -1,0 +1,5 @@
+services:
+  functioncreator.twig_extension:
+    class: Drupal\functioncreator\TwigFunctions
+    tags:
+      - { name: 'twig.extension' }
